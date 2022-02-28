@@ -3,17 +3,16 @@
 import re
 
 def remove_comments_from_json_with_comments(json_with_comments: str) -> str:
-    """This function takes a string input consisting of JSON-with-comments
-    and strips out the comments.
-    """
+    """Takes a string input consisting of JSON-with-comments and strips out the comments."""
 
     json_with_comments_token = "|".join((
-        '[{},:[\]]',                                                         # the six single-character tokens;
+        '[{},:[\\]]',                                                        # the six single-character tokens;
         'true|false|null',                                                   # the three keyword tokens;
         '"(?:[^\\x00-\\x1f"\\\\]|\\\\(?:[bfnrt"\\\\/]|u[0-9A-Fa-f]{4}))*"',  # a string token;
         '-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?',             # a number token;
         '[ \n\r\t]+',                                                        # a non-empty whitespace token;
-        '#.*'                                                                # a comment token starting with '#'.
+        '//.*',                                                              # a // comment, running to end-of-line;
+        '/\\*(?:.|\\n)*?\\*/'                                                # a /* ... */ block comment.
     ))
 
     tokens = re.findall(json_with_comments_token, json_with_comments)
@@ -30,3 +29,16 @@ def remove_comments_from_json_with_comments(json_with_comments: str) -> str:
     # Concatenate all tokens except the comment tokens.
 
     return "".join(token for token in tokens if not token.startswith("#"))
+
+
+def parse_json_with_comments(json_with_comments: str):
+    """Parse JSON-with-comments by removing the comments."""
+    json_without_comments = remove_comments_from_json_with_comments(json_with_comments)
+    return json.loads(json_without_comments)
+
+
+def read_json_with_comments(filename: str):
+    """Read JSON-with-comments from file."""
+    with open(filename, "r") as fi:
+        json_with_comments = fi.read()
+    return parse_json_with_comments(json_with_comments)
