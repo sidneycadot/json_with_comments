@@ -9,9 +9,7 @@ import re
 #    - a backslash followed by any of the characters {'"', '\', or '/', 'b', 'f', 'n', 'r', 't'};
 #    - a backslash followed by a character 'u' and precisely four hex digits ([0-9A-Fa-f]).
 #
-re_string_pattern = '"(?:[^\\x00-\\x1f"\\\]|\\\(?:[bfnrt"\\\/]|u[0-9A-Fa-f]{4}))*"'
-
-print(len(re_string_pattern), repr(re_string_pattern))
+re_string_pattern = '"(?:[^\\x00-\\x1f"\\\\]|\\\\(?:[bfnrt"\\\\/]|u[0-9A-Fa-f]{4}))*"'
 
 re_string = re.compile(re_string_pattern)
 
@@ -28,8 +26,8 @@ testcases_good = [
     '"\\r"',
     '"\\t"',
     '"/"',
-    '"slash may be written directly as / or with a preceding backslash as \\/."',
-    '"backslash may be written with a preceding backslash as \\\\."',
+    '"forward slash: / or  \\/."',
+    '"backslash: \\\\."',
     '"\\udead"',
     '"\\udeadb"',
     '"\\udeadbe"',
@@ -39,40 +37,20 @@ testcases_good = [
 
 testcases_bad = [
     '',
-    'hoi',
+    'hello',
     '"',
-    '"hallo',
-    'hallo"',
+    '"hello',
+    'hello"',
     '"""',
-    '"\a"',
-    '"\b"',
-    '"\c"',
-    '"\d"',
-    '"\e"',
-    '"\f"',
-    '"\g"',
-    '"\h"',
-    '"\i"',
-    '"\j"',
-    '"\k"',
-    '"\l"',
-    '"\m"',
-    '"\n"',
-    '"\o"',
-    '"\p"',
-    '"\q"',
-    '"\r"',
-    '"\s"',
-    '"\t"',
-    '"\v"',
-    '"\w"',
-    '"\y"',
-    '"\z"',
+    '"\x00"', '"\x01"', '"\x02"', '"\x03"', '"\x04"', '"\x05"', '"\x06"', '"\x07"',
+    '"\x08"', '"\x09"', '"\x0a"', '"\x0b"', '"\x0c"', '"\x0d"', '"\x0e"', '"\x0f"',
+    '"\x10"', '"\x11"', '"\x12"', '"\x13"', '"\x14"', '"\x15"', '"\x16"', '"\x17"',
+    '"\x18"', '"\x19"', '"\x1a"', '"\x1b"', '"\x1c"', '"\x1d"', '"\x1e"', '"\x1f"',
     '"\\"',
     '"\\a"', '"\\c"', '"\\d"', '"\\e"', '"\\g"', '"\\h"', '"\\i"',
     '"\\j"', '"\\k"', '"\\l"', '"\\m"', '"\\o"', '"\\p"', '"\\q"',
     '"\\s"', '"\\u"', '"\\v"', '"\\w"', '"\\x"', '"\\y"', '"\\z"',
-    '"backslash may not be directly written as \\.',
+    '"backslash: not just \\.',
     '"\\u"',
     '"\\ud"',
     '"\\ude"',
