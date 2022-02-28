@@ -11,7 +11,7 @@ def remove_comments_from_json_with_comments(json_with_comments: str) -> str:
         '[{},:[\]]',                                                         # the six single-character tokens;
         'true|false|null',                                                   # the three keyword tokens;
         '"(?:[^\\x00-\\x1f"\\\\]|\\\\(?:[bfnrt"\\\\/]|u[0-9A-Fa-f]{4}))*"',  # a string token;
-        '-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?',              # a number token;
+        '-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?',             # a number token;
         '[ \n\r\t]+',                                                        # a non-empty whitespace token;
         '#.*'                                                                # a comment token starting with '#'.
     ))
