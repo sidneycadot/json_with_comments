@@ -5,7 +5,7 @@ import re
 # A valid JSON number token consists of an optional minus sign, followed by an unsigned integer, followed by an optional fractional part,
 # followed by an optional exponential part.
 #
-re_number_pattern = '-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?'
+re_number_pattern = '-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?'
 
 re_number = re.compile(re_number_pattern)
 
