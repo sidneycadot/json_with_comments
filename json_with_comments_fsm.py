@@ -1,9 +1,10 @@
-"""Remove comments from JSON-with-comments."""
+"""Support routines for the JSON-with-comments file format."""
 
 import json
 from enum import Enum
 
 class CharacterClass(Enum):
+    """Character classes for parsing JSON-with-comments."""
     FSLASH = 1
     BSLASH = 2
     QUOTE  = 3
@@ -13,11 +14,13 @@ class CharacterClass(Enum):
     OTHER  = 7
 
 class FsmAction(Enum):
+    """FSM actions for parsing JSON-with-comments."""
     EMIT_NOTHING = 1
     EMIT_CURRENT = 2
     EMIT_FSLASH_THEN_CURRENT = 3
 
 class FsmState(Enum):
+    """FSM states for parsing JSON-with-comments."""
     START              = 1
     MAYBE_COMMENT      = 2
     LINE_COMMENT       = 3
@@ -26,7 +29,7 @@ class FsmState(Enum):
     STRING             = 6
     STRING_BACKSLASH   = 7
 
-fsm_definition = {
+_fsm_definition = {
 
     (FsmState.START , CharacterClass.FSLASH) : (FsmAction.EMIT_NOTHING , FsmState.MAYBE_COMMENT),
     (FsmState.START , CharacterClass.BSLASH) : (FsmAction.EMIT_CURRENT , FsmState.START        ),
@@ -85,7 +88,7 @@ fsm_definition = {
     (FsmState.STRING_BACKSLASH, CharacterClass.OTHER ) : (FsmAction.EMIT_CURRENT , FsmState.STRING )
 }
 
-character_classifications = {
+_character_classifications = {
     '/'  : CharacterClass.FSLASH,
     '\\' : CharacterClass.BSLASH,
     '\"' : CharacterClass.QUOTE,
@@ -94,18 +97,33 @@ character_classifications = {
     '*'  : CharacterClass.STAR
 }
 
+
 def remove_comments_from_json_with_comments(s: str) -> str:
     """Go through a state machine to remove line and block comments from JSON-with-comments."""
     output = []
     state = FsmState.START
     for current_character in s:
-        character_class = character_classifications.get(current_character, CharacterClass.OTHER)
-        (action, state) = fsm_definition[(state, character_class)]
+        character_class = _character_classifications.get(current_character, CharacterClass.OTHER)
+        (action, state) = _fsm_definition[(state, character_class)]
 
         if action == FsmAction.EMIT_FSLASH_THEN_CURRENT:
             output.append("/")
         if action != FsmAction.EMIT_NOTHING:
             output.append(current_character)
+
+    # The usual end state for a succesful FSM run should be START.
+    #
+    # We also accept LINE_COMMENT, i.e., line comments that are not terminated by a newline are accepted.
+    #
+    # The other 5 end states indicate some kind of error.
+    #
+    # The three states (MAYBE_COMMENT, STRING, STRING_BACKSLASH) will be intercepted by the JSON parser
+    # that runs on our output. We don't handle them here.
+    #
+    # For the two states (BLOCK_COMMENT, BLOCK_COMMENT_STAR), we raise a ValueError exception here.
+    #
+    if state in (FsmState.BLOCK_COMMENT, FsmState.BLOCK_COMMENT_STAR):
+        raise ValueError("Unterminated block comment at end of string.")
 
     return "".join(output)
 
