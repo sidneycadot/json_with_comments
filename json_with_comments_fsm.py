@@ -138,4 +138,8 @@ def read_json_with_comments(filename: str):
     """Read JSON-with-comments from file."""
     with open(filename, "r") as fi:
         json_with_comments = fi.read()
-    return parse_json_with_comments(json_with_comments)
+
+    try:
+        return parse_json_with_comments(json_with_comments)
+    except ValueError:
+        raise ValueError("Unterminated block comment at end of file.")
