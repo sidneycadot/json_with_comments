@@ -2,7 +2,7 @@
 
 """A small example showing how to use JSON-with-comments."""
 
-from json_with_comments import parse_json_with_comments
+from json_with_comments_fsm import parse_json_with_comments
 
 stress_test = """// This is a small test to see if comment removal works as it should.
 {
