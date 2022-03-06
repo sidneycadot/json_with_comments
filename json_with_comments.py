@@ -32,6 +32,7 @@ In addition to these five tokens defined by JSON, our JSON-with-comments format 
 """
 
 import re
+import json
 
 def remove_comments_from_json_with_comments(json_with_comments: str) -> str:
     """Takes a string input consisting of JSON-with-comments and strips out the comments.
