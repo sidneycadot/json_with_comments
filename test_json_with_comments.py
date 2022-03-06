@@ -1,6 +1,6 @@
 #! /usr/bin/env -S python3 -B
 
-"""A small example showing how to use the 'remove_comments_from_json_with_comments' function."""
+"""A small example showing how to use JSON-with-comments."""
 
 from json_with_comments import parse_json_with_comments
 
