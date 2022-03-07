@@ -35,7 +35,7 @@ class FsmState(Enum):
     STRING_BACKSLASH   = 7
 
 
-class JSONWithCommentsError(Exception):
+class JSONWithCommentsError(ValueError):
     """An error occurred while processing JSON-with-comments."""
 
 
