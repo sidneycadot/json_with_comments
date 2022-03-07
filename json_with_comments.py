@@ -35,6 +35,10 @@ class FsmState(Enum):
     STRING_BACKSLASH   = 7
 
 
+class JSONWithCommentsError(Exception):
+    """An error occurred while processing JSON-with-comments."""
+
+
 _fsm_definition = {
 
     (FsmState.DEFAULT , CharacterClass.FSLASH) : (FsmAction.EMIT_NOTHING , FsmState.MAYBE_COMMENT),
@@ -45,26 +49,26 @@ _fsm_definition = {
     (FsmState.MAYBE_COMMENT , CharacterClass.STAR  ) : (FsmAction.EMIT_TWO_SPACES          , FsmState.BLOCK_COMMENT),
     (FsmState.MAYBE_COMMENT , CharacterClass.OTHER ) : (FsmAction.EMIT_FSLASH_THEN_CURRENT , FsmState.DEFAULT      ),
 
-    (FsmState.LINE_COMMENT , CharacterClass.CR    ) : (FsmAction.EMIT_CURRENT   , FsmState.LINE_COMMENT ),
-    (FsmState.LINE_COMMENT , CharacterClass.NL    ) : (FsmAction.EMIT_CURRENT   , FsmState.DEFAULT      ),
-    (FsmState.LINE_COMMENT , CharacterClass.OTHER ) : (FsmAction.EMIT_ONE_SPACE , FsmState.LINE_COMMENT ),
+    (FsmState.LINE_COMMENT , CharacterClass.CR   ) : (FsmAction.EMIT_CURRENT   , FsmState.LINE_COMMENT),
+    (FsmState.LINE_COMMENT , CharacterClass.NL   ) : (FsmAction.EMIT_CURRENT   , FsmState.DEFAULT     ),
+    (FsmState.LINE_COMMENT , CharacterClass.OTHER) : (FsmAction.EMIT_ONE_SPACE , FsmState.LINE_COMMENT),
 
-    (FsmState.BLOCK_COMMENT , CharacterClass.CR    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT      ),
-    (FsmState.BLOCK_COMMENT , CharacterClass.NL    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT      ),
-    (FsmState.BLOCK_COMMENT , CharacterClass.STAR  ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT_STAR ),
-    (FsmState.BLOCK_COMMENT , CharacterClass.OTHER ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT      ),
+    (FsmState.BLOCK_COMMENT , CharacterClass.CR   ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
+    (FsmState.BLOCK_COMMENT , CharacterClass.NL   ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
+    (FsmState.BLOCK_COMMENT , CharacterClass.STAR ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT_STAR),
+    (FsmState.BLOCK_COMMENT , CharacterClass.OTHER) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT     ),
 
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.FSLASH) : (FsmAction.EMIT_ONE_SPACE , FsmState.DEFAULT            ),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.CR    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT      ),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.NL    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT      ),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.STAR  ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT_STAR ),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.OTHER ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT      ),
+    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.FSLASH) : (FsmAction.EMIT_ONE_SPACE , FsmState.DEFAULT           ),
+    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.CR    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
+    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.NL    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
+    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.STAR  ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT_STAR),
+    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.OTHER ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT     ),
 
-    (FsmState.STRING , CharacterClass.BSLASH ) : (FsmAction.EMIT_CURRENT , FsmState.STRING_BACKSLASH ),
-    (FsmState.STRING , CharacterClass.QUOTE  ) : (FsmAction.EMIT_CURRENT , FsmState.DEFAULT          ),
-    (FsmState.STRING , CharacterClass.OTHER  ) : (FsmAction.EMIT_CURRENT , FsmState.STRING           ),
+    (FsmState.STRING , CharacterClass.BSLASH) : (FsmAction.EMIT_CURRENT , FsmState.STRING_BACKSLASH),
+    (FsmState.STRING , CharacterClass.QUOTE ) : (FsmAction.EMIT_CURRENT , FsmState.DEFAULT         ),
+    (FsmState.STRING , CharacterClass.OTHER ) : (FsmAction.EMIT_CURRENT , FsmState.STRING          ),
 
-    (FsmState.STRING_BACKSLASH, CharacterClass.OTHER    ) : (FsmAction.EMIT_CURRENT , FsmState.STRING )
+    (FsmState.STRING_BACKSLASH , CharacterClass.OTHER) : (FsmAction.EMIT_CURRENT , FsmState.STRING)
 }
 
 
@@ -79,14 +83,14 @@ _character_classifications = {
 
 
 def remove_comments_from_json_with_comments(input_string: str) -> str:
-    """Go through a state machine to remove line and block comments from JSON-with-comments.
+    """Go through a finite state machine to remove line and block comments from JSON-with-comments.
 
     Note: the comments are not actually removed; their contents are overwritten by spaces,
-    and carriage returns and line feeds inside comments are passed through as-is.
+    except that carriage returns and line feeds inside comments are passed through as-is.
 
     The reason for doing this is that it preserves line and character numbering of the output
-    relative to the input. This means that if the JSON parser that runs on our output needs
-    to report an issue, it can do so with line and character numbers that are meaningful.
+    relative to the input. If a JSON parser runs on our output and needs to report an issue,
+    it can do so with line and character numbers that are meaningful.
     """
 
     output = []
@@ -96,7 +100,7 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
         character_class = _character_classifications.get(current_character, CharacterClass.OTHER)
 
         # If a (state, character_class) tuple is not explicitly handled in the FSM definition,
-        # we will follow the behavior of CharacterClass.OTHER.
+        # the behavior of CharacterClass.OTHER will be applied, which is defined for all states.
         if (state, character_class) not in _fsm_definition:
             character_class = CharacterClass.OTHER
 
@@ -104,21 +108,16 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
 
         # Perform the specified action.
 
-        if action == FsmAction.EMIT_FSLASH_THEN_CURRENT:
-            output.append("/")
-
         if action in (FsmAction.EMIT_CURRENT, FsmAction.EMIT_FSLASH_THEN_CURRENT):
+            if action == FsmAction.EMIT_FSLASH_THEN_CURRENT:
+                output.append("/")
             output.append(current_character)
-
-        if action in (FsmAction.EMIT_ONE_SPACE, FsmAction.EMIT_TWO_SPACES):
-            output.append(" ")
-
-        if action == FsmAction.EMIT_TWO_SPACES:
+        elif action in (FsmAction.EMIT_ONE_SPACE, FsmAction.EMIT_TWO_SPACES):
+            if action == FsmAction.EMIT_TWO_SPACES:
+                output.append(" ")
             output.append(" ")
 
     # We're at the end of the character processing loop.
-
-    # Check if we've suppressed a forward slash in anticipation of a comment start. If so, output it.
 
     # The usual end state for a succesful FSM run should be DEFAULT.
     # We also accept LINE_COMMENT, i.e., line comments that are not terminated by a newline are accepted.
@@ -126,11 +125,11 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
     # If we're in one of the five other possible states at the end, it indicates some parsing issue.
 
     # The end states STRING and STRING_BACKSLASH indicate that the input ended while inside a string.
-    # This issue remains in the output, and will be caught by the JSON parser that runs on our output.
+    # This issue remains in the output, and will be caught when a JSON parser runs on our output.
 
     # If we're in the MAYBE_COMMENT state, the input ended in a forward slash. This forward slash was not
     # emitted when we entered the MAYBE_COMMENT state, so we emit it now.
-    # This will be a JSON grammar error that will be caught by the JSON parser that runs on our output.
+    # This will result in a JSON grammar error that will be caught when a JSON parser runs on our output.
 
     if state == FsmState.MAYBE_COMMENT:
         output.append("/")
@@ -140,7 +139,7 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
     # This issue will not be picked up by the JSON parser that runs on our output, so we handle it here:
 
     if state in (FsmState.BLOCK_COMMENT, FsmState.BLOCK_COMMENT_STAR):
-        raise ValueError("Unterminated block comment at end of string.")
+        raise JSONWithCommentsError("Unterminated block comment at end of string.")
 
     # Concatenate the output characters and return the result.
 
@@ -150,7 +149,7 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
 
 
 def parse_json_with_comments(json_with_comments: str):
-    """Parse JSON-with-comments by overwriting with whitespace."""
+    """Parse JSON-with-comments by removing the comments and parsing the result as JSON."""
     json_without_comments = remove_comments_from_json_with_comments(json_with_comments)
     return json.loads(json_without_comments)
 
@@ -159,8 +158,7 @@ def read_json_with_comments(filename: str):
     """Read JSON-with-comments from file and parse it."""
     with open(filename, "r") as fi:
         json_with_comments = fi.read()
-
     try:
         return parse_json_with_comments(json_with_comments)
-    except ValueError:
-        raise ValueError("Unterminated block comment at end of file.")
+    except JSONWithCommentsError:
+        raise JSONWithCommentsError("Unterminated block comment at end of file.")
