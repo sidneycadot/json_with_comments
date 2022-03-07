@@ -139,7 +139,7 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
     # This issue will not be picked up by the JSON parser that runs on our output, so we handle it here:
 
     if state in (FsmState.BLOCK_COMMENT, FsmState.BLOCK_COMMENT_STAR):
-        raise JSONWithCommentsError("Unterminated block comment at end of string.")
+        raise JSONWithCommentsError("Unterminated block comment.")
 
     # Concatenate the output characters and return the result.
 
@@ -156,9 +156,6 @@ def parse_json_with_comments(json_with_comments: str):
 
 def read_json_with_comments(filename: str):
     """Read JSON-with-comments from file and parse it."""
-    with open(filename, "r") as fi:
-        json_with_comments = fi.read()
-    try:
-        return parse_json_with_comments(json_with_comments)
-    except JSONWithCommentsError:
-        raise JSONWithCommentsError("Unterminated block comment at end of file.")
+    with open(filename, "r") as f:
+        json_with_comments = f.read()
+    return parse_json_with_comments(json_with_comments)
