@@ -1,7 +1,7 @@
 """This module implements support for JSON-with-comments.
 
 JSON tokens fall into one of the following five categories:
-    
+
 (J.1) Single-character tokens. There are six of these: '{', '}', ',', ':', '[', and ']'.
 (J.2) Reserved word tokens. There are three of these: 'true', 'false', and 'null'.
 (J.3) String tokens. These start and end with a quotation mark (0x22), with string characters in between.
@@ -15,7 +15,7 @@ JSON tokens fall into one of the following five categories:
       Note that the forward slash (0x3f) can be written either directly or with a preceding backslash in a JSON string.
 
 (J.4) Number tokens, consisting of up to four parts:
-    
+
       (4a) optionally: a preceding '-' sign. (A preceding '+' sign is not allowed.)
       (4b) an unsigned integer part consisting of decimal digits. Leading zeros are not allowed, except if the value zero itself must be represented.
       (4c) optionally: a period (.) followed by a nonempty sequence of decimal digits. This is the fractional part of the mantissa.
