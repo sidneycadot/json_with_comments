@@ -10,7 +10,7 @@ class JSONWithCommentsError(ValueError):
 
 class FsmState(Enum):
     """FSM states for parsing JSON-with-comments."""
-    DEFAULT            = 1  # default state : not parsing a string or comment.
+    DEFAULT            = 1  # default state ; not parsing a string or comment.
     COMMENT_INTRO      = 2  # accepted '/'  ; looks like the start of a line or block comment.
     LINE_COMMENT       = 3  # accepted '//' ; processing line comment.
     BLOCK_COMMENT      = 4  # accepted '/*' ; processing block comment.
