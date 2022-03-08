@@ -113,7 +113,7 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
         if (state, character_class) not in _fsm_definition:
             character_class = CharacterClass.OTHER
 
-        (action, state) = _fsm_definition[(state, character_class)]
+        (action, next_state) = _fsm_definition[(state, character_class)]
 
         # Perform the specified action.
 
@@ -125,6 +125,10 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
             if action == FsmAction.EMIT_TWO_SPACES:
                 output.append(" ")
             output.append(" ")
+
+        # Proceed to the next state.
+
+        state = next_state
 
     # We're at the end of the character processing loop.
 
@@ -164,7 +168,8 @@ def parse_json_with_comments(json_with_comments: str):
     try:
         return json.loads(json_without_comments)
     except json.JSONDecodeError as json_exception:
-        raise JSONWithCommentsError("Content without comments is not valid JSON.") from json_exception
+        # Wrap the JSONDecodeError in a JSONWithCommentsError exception.
+        raise JSONWithCommentsError("Comment removal did not yield valid JSON.") from json_exception
 
 
 def read_json_with_comments(filename: str):
