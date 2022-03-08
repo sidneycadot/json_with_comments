@@ -92,6 +92,7 @@ _character_classifications = {
     '*'  : CharacterClass.STAR
 }
 
+
 def remove_comments_from_json_with_comments(input_string: str) -> str:
     """Remove line and block comments from JSON-with-comments.
 
