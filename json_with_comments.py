@@ -4,6 +4,21 @@ import json
 from enum import Enum
 
 
+class JSONWithCommentsError(ValueError):
+    """An error occurred while processing JSON-with-comments."""
+
+
+class FsmState(Enum):
+    """FSM states for parsing JSON-with-comments."""
+    DEFAULT            = 1  # default state : not parsing a string or comment.
+    COMMENT_INTRO      = 2  # accepted '/'  ; looks like the start of a line or block comment.
+    LINE_COMMENT       = 3  # accepted '//' ; processing line comment.
+    BLOCK_COMMENT      = 4  # accepted '/*' ; processing block comment.
+    BLOCK_COMMENT_STAR = 5  # accepted '/*' ; processing block comment, and just saw a '*'.
+    STRING             = 6  # accepted '"'  ; processing string.
+    STRING_BACKSLASH   = 7  # accepted '"'  ; processing string, and just saw a backslash.
+
+
 class CharacterClass(Enum):
     """Character classes for parsing JSON-with-comments."""
     FSLASH = 1  # forward slash
@@ -17,37 +32,31 @@ class CharacterClass(Enum):
 
 class FsmAction(Enum):
     """FSM actions for parsing JSON-with-comments."""
-    EMIT_CURRENT             = 1
-    EMIT_FSLASH_THEN_CURRENT = 2
-    EMIT_NOTHING             = 3
-    EMIT_ONE_SPACE           = 4
-    EMIT_TWO_SPACES          = 5
+    EMIT_NOTHING             = 1  # emit nothing
+    EMIT_CURRENT             = 2  # emit the current character
+    EMIT_FSLASH_THEN_CURRENT = 3  # emit forward slash followed by current character
+    EMIT_ONE_SPACE           = 4  # emit one space character
+    EMIT_TWO_SPACES          = 5  # emit two space characters
 
 
-class FsmState(Enum):
-    """FSM states for parsing JSON-with-comments."""
-    DEFAULT            = 1
-    MAYBE_COMMENT      = 2
-    LINE_COMMENT       = 3
-    BLOCK_COMMENT      = 4
-    BLOCK_COMMENT_STAR = 5
-    STRING             = 6
-    STRING_BACKSLASH   = 7
-
-
-class JSONWithCommentsError(ValueError):
-    """An error occurred while processing JSON-with-comments."""
-
+# Define the transition table of (state, character_class) -> (action, next_state).
+#
+# Note that not all possible combinations of (state, character_class) are explicitly specified.
+# If during scanning a (state, character_class) combination is encountered that is not in the
+# transition table, the key (state, CharacterClass.OTHER) key will be used instead.
+#
+# This makes the transition table both smaller (only 22 out of 49 entries are specified)
+# and easier to understand.
 
 _fsm_definition = {
 
-    (FsmState.DEFAULT , CharacterClass.FSLASH) : (FsmAction.EMIT_NOTHING , FsmState.MAYBE_COMMENT),
+    (FsmState.DEFAULT , CharacterClass.FSLASH) : (FsmAction.EMIT_NOTHING , FsmState.COMMENT_INTRO),
     (FsmState.DEFAULT , CharacterClass.QUOTE ) : (FsmAction.EMIT_CURRENT , FsmState.STRING       ),
     (FsmState.DEFAULT , CharacterClass.OTHER ) : (FsmAction.EMIT_CURRENT , FsmState.DEFAULT      ),
 
-    (FsmState.MAYBE_COMMENT , CharacterClass.FSLASH) : (FsmAction.EMIT_TWO_SPACES          , FsmState.LINE_COMMENT ),
-    (FsmState.MAYBE_COMMENT , CharacterClass.STAR  ) : (FsmAction.EMIT_TWO_SPACES          , FsmState.BLOCK_COMMENT),
-    (FsmState.MAYBE_COMMENT , CharacterClass.OTHER ) : (FsmAction.EMIT_FSLASH_THEN_CURRENT , FsmState.DEFAULT      ),
+    (FsmState.COMMENT_INTRO , CharacterClass.FSLASH) : (FsmAction.EMIT_TWO_SPACES          , FsmState.LINE_COMMENT ),
+    (FsmState.COMMENT_INTRO , CharacterClass.STAR  ) : (FsmAction.EMIT_TWO_SPACES          , FsmState.BLOCK_COMMENT),
+    (FsmState.COMMENT_INTRO , CharacterClass.OTHER ) : (FsmAction.EMIT_FSLASH_THEN_CURRENT , FsmState.DEFAULT      ),
 
     (FsmState.LINE_COMMENT , CharacterClass.CR   ) : (FsmAction.EMIT_CURRENT   , FsmState.LINE_COMMENT),
     (FsmState.LINE_COMMENT , CharacterClass.NL   ) : (FsmAction.EMIT_CURRENT   , FsmState.DEFAULT     ),
@@ -71,6 +80,8 @@ _fsm_definition = {
     (FsmState.STRING_BACKSLASH , CharacterClass.OTHER) : (FsmAction.EMIT_CURRENT , FsmState.STRING)
 }
 
+# Characters are classified according to this table. Characters that not explicitly mentioned
+# belong to CharacterClass.OTHER.
 
 _character_classifications = {
     '/'  : CharacterClass.FSLASH,
@@ -81,16 +92,14 @@ _character_classifications = {
     '*'  : CharacterClass.STAR
 }
 
-
 def remove_comments_from_json_with_comments(input_string: str) -> str:
-    """Go through a finite state machine to remove line and block comments from JSON-with-comments.
+    """Remove line and block comments from JSON-with-comments.
 
-    Note: the comments are not actually removed; their contents are overwritten by spaces,
-    except that carriage returns and line feeds inside comments are passed through as-is.
-
-    The reason for doing this is that it preserves line and character numbering of the output
-    relative to the input. If a JSON parser runs on our output and needs to report an issue,
-    it can do so with line and character numbers that are meaningful.
+    The comments are not actually removed; their contents is overwritten by spaces,
+    except that carriage returns and newlines inside comments are passed through.
+    This preserves line and character numbering of the output relative to the input.
+    If a JSON parser runs on our output and needs to report an issue, it can do so
+    with line and character numbers that are meaningful.
     """
 
     output = []
@@ -119,24 +128,25 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
 
     # We're at the end of the character processing loop.
 
-    # The usual end state for a succesful FSM run should be DEFAULT.
-    # We also accept LINE_COMMENT, i.e., line comments that are not terminated by a newline are accepted.
+    # The usual end state for a succesful FSM run should be DEFAULT. We also accept LINE_COMMENT,
+    # meaning that line comments that are not terminated by a newline are acceptable.
     #
-    # If we're in one of the five other possible states at the end, it indicates some parsing issue.
-
+    # If we're in one of the five other states at the end, something is wrong!
+    #
     # The end states STRING and STRING_BACKSLASH indicate that the input ended while inside a string.
-    # This issue remains in the output, and will be caught when a JSON parser runs on our output.
+    # This issue remains in the output, and will be caught when a JSON parser processes our output.
+    #
+    # If we're in the COMMENT_INTRO state, the input ended in a forward slash. This forward slash was
+    # not emitted when we entered the COMMENT_INTRO state, so we emit it now. Since no valid JSON file
+    # can end with a forward slash, this will be caught when a JSON parser processes our output.
 
-    # If we're in the MAYBE_COMMENT state, the input ended in a forward slash. This forward slash was not
-    # emitted when we entered the MAYBE_COMMENT state, so we emit it now.
-    # This will result in a JSON grammar error that will be caught when a JSON parser runs on our output.
-
-    if state == FsmState.MAYBE_COMMENT:
+    if state == FsmState.COMMENT_INTRO:
         output.append("/")
 
     # The two remaining possible end states (BLOCK_COMMENT, BLOCK_COMMENT_STAR) indicate that the input
     # ended while parsing an unterminated block comment.
-    # This issue will not be picked up by the JSON parser that runs on our output, so we handle it here:
+    # This issue would not be picked up by the JSON parser that runs on our output, as our output will
+    # just end with a bunch of spaces. So for these case, we will raise an exception here.
 
     if state in (FsmState.BLOCK_COMMENT, FsmState.BLOCK_COMMENT_STAR):
         raise JSONWithCommentsError("Unterminated block comment.")
@@ -151,7 +161,10 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
 def parse_json_with_comments(json_with_comments: str):
     """Parse JSON-with-comments by removing the comments and parsing the result as JSON."""
     json_without_comments = remove_comments_from_json_with_comments(json_with_comments)
-    return json.loads(json_without_comments)
+    try:
+        return json.loads(json_without_comments)
+    except json.JSONDecodeError as json_exception:
+        raise JSONWithCommentsError("Content without comments is not valid JSON.") from json_exception
 
 
 def read_json_with_comments(filename: str):
