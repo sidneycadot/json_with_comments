@@ -45,7 +45,7 @@ class FsmAction(Enum):
 # If during scanning a (state, character_class) combination is encountered that is not in the
 # transition table, the key (state, CharacterClass.OTHER) key will be used instead.
 #
-# This makes the transition table both smaller (only 22 out of 49 entries are specified)
+# This makes the transition table both smaller (only 22 out of 49 entries need to be specified)
 # and easier to understand.
 
 _fsm_definition = {
@@ -80,7 +80,7 @@ _fsm_definition = {
     (FsmState.STRING_BACKSLASH , CharacterClass.OTHER) : (FsmAction.EMIT_CURRENT , FsmState.STRING)
 }
 
-# Characters are classified according to this table. Characters that not explicitly mentioned
+# Characters are classified according to this table. Characters that are not explicitly mentioned
 # belong to CharacterClass.OTHER.
 
 _character_classifications = {
@@ -95,23 +95,28 @@ _character_classifications = {
 def remove_comments_from_json_with_comments(input_string: str) -> str:
     """Remove line and block comments from JSON-with-comments.
 
-    The comments are not actually removed; their contents is overwritten by spaces,
-    except that carriage returns and newlines inside comments are passed through.
+    The comments are not actually removed; their markers and contents is overwritten by
+    spaces, except that carriage returns and newlines inside comments are passed through.
     This preserves line and character numbering of the output relative to the input.
-    If a JSON parser runs on our output and needs to report an issue, it can do so
-    with line and character numbers that are meaningful.
+    If a JSON parser runs on our output and needs to report an issue, it can do so with
+    line and character numbers that are meaningful.
     """
 
     output = []
+
     state = FsmState.DEFAULT
+
     for current_character in input_string:
 
         character_class = _character_classifications.get(current_character, CharacterClass.OTHER)
 
         # If a (state, character_class) tuple is not explicitly handled in the FSM definition,
         # the behavior of CharacterClass.OTHER will be applied, which is defined for all states.
+
         if (state, character_class) not in _fsm_definition:
             character_class = CharacterClass.OTHER
+
+        # Look up action and next state.
 
         (action, next_state) = _fsm_definition[(state, character_class)]
 
@@ -130,12 +135,12 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
 
         state = next_state
 
-    # We're at the end of the character processing loop.
+    # We're at the end of the character scan loop.
 
-    # The usual end state for a succesful FSM run should be DEFAULT. We also accept LINE_COMMENT,
+    # The usual end state for a successful scan should be DEFAULT. We also accept LINE_COMMENT,
     # meaning that line comments that are not terminated by a newline are acceptable.
     #
-    # If we're in one of the five other states at the end, something is wrong!
+    # If we're in one of the five other states at the end of the scan, something is wrong!
     #
     # The end states STRING and STRING_BACKSLASH indicate that the input ended while inside a string.
     # This issue remains in the output, and will be caught when a JSON parser processes our output.
@@ -150,7 +155,7 @@ def remove_comments_from_json_with_comments(input_string: str) -> str:
     # The two remaining possible end states (BLOCK_COMMENT, BLOCK_COMMENT_STAR) indicate that the input
     # ended while parsing an unterminated block comment.
     # This issue would not be picked up by the JSON parser that runs on our output, as our output will
-    # just end with a bunch of spaces. So for these case, we will raise an exception here.
+    # just end with a bunch of spaces. So for these end states, we will raise an exception.
 
     if state in (FsmState.BLOCK_COMMENT, FsmState.BLOCK_COMMENT_STAR):
         raise JSONWithCommentsError("Unterminated block comment.")
