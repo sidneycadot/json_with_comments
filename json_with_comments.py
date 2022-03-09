@@ -1,11 +1,29 @@
-"""Routines to process JSON extended with comments."""
+"""Routines to process JSON-with-comments.
+
+JSON is a convenient human-readable data interchange format due to it simplicity and
+widely available support. Unfortunately, it does not support comments, making it less
+suitable for configuration files.
+
+This module provides support for comments in JSON. Two kinds of comments are supported,
+replicating the two types of comment supported by the JavaScript language from which
+JSON originates:
+
+(1) Line comments start with "//" and continue to the next newline character;
+(2) Block comments start with "/*" and end with the next "*/".
+
+This module works by replacing comments with whitespace. Inside comments, carriage returns
+and newlines are passed through as-is; all other characters are replaced by spaces. This
+preserves the structure of the original JSON-with-comments, allowing a subsequently run
+JSON parser to report any issues with line numbers and line offsets corresponding to the
+original JSON-with-comments.
+"""
 
 import json
 from enum import Enum
 
 
 class JSONWithCommentsError(ValueError):
-    """An error occurred while processing JSON-with-comments."""
+    """An error occurred while scanning JSON-with-comments."""
 
 
 class FsmState(Enum):
@@ -101,7 +119,7 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
 
     This preserves line and character numbering of the output relative to the input.
     If a JSON parser runs on our output and needs to report an issue, it can do so
-    with line and character numbers that are meaningful.
+    with line numbers and line offsets that are meaningful.
     """
 
     output = []
@@ -144,7 +162,7 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
     #
     # If we're in one of the five other states at the end of the scan, something is wrong!
     #
-    # The end states STRING and STRING_BACKSLASH indicate that the input ended while inside a string.
+    # The states STRING and STRING_BACKSLASH indicate that the input ended while scanning a string.
     # This issue remains in the output, and will be caught when a JSON parser processes our output.
     #
     # The three remaining erroneous states need action from our side:
@@ -152,8 +170,8 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
     if state == FsmState.COMMENT_INTRO:
         # If we're in the COMMENT_INTRO state, the input ended in a forward slash. This forward
         # slash was not yet emitted when we entered the COMMENT_INTRO state, so we emit it now.
-        # Since no valid JSON file can end with a forward slash, this will be caught when a#
-        # JSON parser processes our output.
+        # Since no valid JSON file can end with a forward slash, this slash will be caught when
+        # a JSON parser processes our output, causing a parsing error.
         output.append("/")
     elif state in (FsmState.BLOCK_COMMENT, FsmState.BLOCK_COMMENT_STAR):
         # The end states BLOCK_COMMENT and BLOCK_COMMENT_STAR indicate that the input ended while
@@ -170,7 +188,7 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
 
 
 def parse_json_with_comments(json_with_comments: str):
-    """Parse JSON-with-comments by removing the comments and parsing the result as JSON."""
+    """Parse JSON-with-comments by replacing the comments with whitespace and parsing the result as JSON."""
     json_without_comments = replace_json_comments_by_whitespace(json_with_comments)
     try:
         return json.loads(json_without_comments)
@@ -180,7 +198,7 @@ def parse_json_with_comments(json_with_comments: str):
 
 
 def read_json_with_comments(filename: str):
-    """Read JSON-with-comments from file and parse it."""
+    """Read JSON-with-comments from a file and parse it."""
     with open(filename, "r") as f:
         json_with_comments = f.read()
     return parse_json_with_comments(json_with_comments)
