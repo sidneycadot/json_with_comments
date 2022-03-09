@@ -50,34 +50,34 @@ class CharacterClass(Enum):
 
 _fsm_definition = {
 
-    (FsmState.DEFAULT , CharacterClass.FSLASH) : (FsmAction.EMIT_NOTHING , FsmState.COMMENT_INTRO),
-    (FsmState.DEFAULT , CharacterClass.QUOTE ) : (FsmAction.EMIT_CURRENT , FsmState.STRING       ),
-    (FsmState.DEFAULT , CharacterClass.OTHER ) : (FsmAction.EMIT_CURRENT , FsmState.DEFAULT      ),
+    ( FsmState.DEFAULT            , CharacterClass.FSLASH ) : ( FsmAction.EMIT_NOTHING             , FsmState.COMMENT_INTRO      ),
+    ( FsmState.DEFAULT            , CharacterClass.QUOTE  ) : ( FsmAction.EMIT_CURRENT             , FsmState.STRING             ),
+    ( FsmState.DEFAULT            , CharacterClass.OTHER  ) : ( FsmAction.EMIT_CURRENT             , FsmState.DEFAULT            ),
 
-    (FsmState.COMMENT_INTRO , CharacterClass.FSLASH) : (FsmAction.EMIT_TWO_SPACES          , FsmState.LINE_COMMENT ),
-    (FsmState.COMMENT_INTRO , CharacterClass.STAR  ) : (FsmAction.EMIT_TWO_SPACES          , FsmState.BLOCK_COMMENT),
-    (FsmState.COMMENT_INTRO , CharacterClass.OTHER ) : (FsmAction.EMIT_FSLASH_THEN_CURRENT , FsmState.DEFAULT      ),
+    ( FsmState.COMMENT_INTRO      , CharacterClass.FSLASH ) : ( FsmAction.EMIT_TWO_SPACES          , FsmState.LINE_COMMENT       ),
+    ( FsmState.COMMENT_INTRO      , CharacterClass.STAR   ) : ( FsmAction.EMIT_TWO_SPACES          , FsmState.BLOCK_COMMENT      ),
+    ( FsmState.COMMENT_INTRO      , CharacterClass.OTHER  ) : ( FsmAction.EMIT_FSLASH_THEN_CURRENT , FsmState.DEFAULT            ),
 
-    (FsmState.LINE_COMMENT , CharacterClass.CR   ) : (FsmAction.EMIT_CURRENT   , FsmState.LINE_COMMENT),
-    (FsmState.LINE_COMMENT , CharacterClass.NL   ) : (FsmAction.EMIT_CURRENT   , FsmState.DEFAULT     ),
-    (FsmState.LINE_COMMENT , CharacterClass.OTHER) : (FsmAction.EMIT_ONE_SPACE , FsmState.LINE_COMMENT),
+    ( FsmState.LINE_COMMENT       , CharacterClass.CR     ) : ( FsmAction.EMIT_CURRENT             , FsmState.LINE_COMMENT       ),
+    ( FsmState.LINE_COMMENT       , CharacterClass.NL     ) : ( FsmAction.EMIT_CURRENT             , FsmState.DEFAULT            ),
+    ( FsmState.LINE_COMMENT       , CharacterClass.OTHER  ) : ( FsmAction.EMIT_ONE_SPACE           , FsmState.LINE_COMMENT       ),
 
-    (FsmState.BLOCK_COMMENT , CharacterClass.CR   ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
-    (FsmState.BLOCK_COMMENT , CharacterClass.NL   ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
-    (FsmState.BLOCK_COMMENT , CharacterClass.STAR ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT_STAR),
-    (FsmState.BLOCK_COMMENT , CharacterClass.OTHER) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT     ),
+    ( FsmState.BLOCK_COMMENT      , CharacterClass.CR     ) : ( FsmAction.EMIT_CURRENT             , FsmState.BLOCK_COMMENT      ),
+    ( FsmState.BLOCK_COMMENT      , CharacterClass.NL     ) : ( FsmAction.EMIT_CURRENT             , FsmState.BLOCK_COMMENT      ),
+    ( FsmState.BLOCK_COMMENT      , CharacterClass.STAR   ) : ( FsmAction.EMIT_ONE_SPACE           , FsmState.BLOCK_COMMENT_STAR ),
+    ( FsmState.BLOCK_COMMENT      , CharacterClass.OTHER  ) : ( FsmAction.EMIT_ONE_SPACE           , FsmState.BLOCK_COMMENT      ),
 
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.FSLASH) : (FsmAction.EMIT_ONE_SPACE , FsmState.DEFAULT           ),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.CR    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.NL    ) : (FsmAction.EMIT_CURRENT   , FsmState.BLOCK_COMMENT     ),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.STAR  ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT_STAR),
-    (FsmState.BLOCK_COMMENT_STAR , CharacterClass.OTHER ) : (FsmAction.EMIT_ONE_SPACE , FsmState.BLOCK_COMMENT     ),
+    ( FsmState.BLOCK_COMMENT_STAR , CharacterClass.FSLASH ) : ( FsmAction.EMIT_ONE_SPACE           , FsmState.DEFAULT            ),
+    ( FsmState.BLOCK_COMMENT_STAR , CharacterClass.CR     ) : ( FsmAction.EMIT_CURRENT             , FsmState.BLOCK_COMMENT      ),
+    ( FsmState.BLOCK_COMMENT_STAR , CharacterClass.NL     ) : ( FsmAction.EMIT_CURRENT             , FsmState.BLOCK_COMMENT      ),
+    ( FsmState.BLOCK_COMMENT_STAR , CharacterClass.STAR   ) : ( FsmAction.EMIT_ONE_SPACE           , FsmState.BLOCK_COMMENT_STAR ),
+    ( FsmState.BLOCK_COMMENT_STAR , CharacterClass.OTHER  ) : ( FsmAction.EMIT_ONE_SPACE           , FsmState.BLOCK_COMMENT      ),
 
-    (FsmState.STRING , CharacterClass.BSLASH) : (FsmAction.EMIT_CURRENT , FsmState.STRING_BACKSLASH),
-    (FsmState.STRING , CharacterClass.QUOTE ) : (FsmAction.EMIT_CURRENT , FsmState.DEFAULT         ),
-    (FsmState.STRING , CharacterClass.OTHER ) : (FsmAction.EMIT_CURRENT , FsmState.STRING          ),
+    ( FsmState.STRING             , CharacterClass.BSLASH ) : ( FsmAction.EMIT_CURRENT             , FsmState.STRING_BACKSLASH   ),
+    ( FsmState.STRING             , CharacterClass.QUOTE  ) : ( FsmAction.EMIT_CURRENT             , FsmState.DEFAULT            ),
+    ( FsmState.STRING             , CharacterClass.OTHER  ) : ( FsmAction.EMIT_CURRENT             , FsmState.STRING             ),
 
-    (FsmState.STRING_BACKSLASH , CharacterClass.OTHER) : (FsmAction.EMIT_CURRENT , FsmState.STRING)
+    ( FsmState.STRING_BACKSLASH   , CharacterClass.OTHER  ) : ( FsmAction.EMIT_CURRENT             , FsmState.STRING             )
 }
 
 # Characters are classified according to this table.
