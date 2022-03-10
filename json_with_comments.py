@@ -6,7 +6,7 @@ making it less suitable for configuration files.
 
 This module implements several functions that add support for comments to JSON, resulting in a
 format that we refer to as "JSON-with-comments". Two types of comments are supported, mirroring
-the two types of comment available in the JavaScript language from which JSON originates:
+the two types of comments available in the JavaScript language from which JSON originates:
 
 * Line comments start with "//" and continue to the next newline character;
 * Block comments start with "/*" and end with the next "*/".
@@ -166,15 +166,15 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
 
     # We're at the end of the character scan loop.
 
-    # The usual end state for a successful scan should be DEFAULT. We also accept LINE_COMMENT,
+    # The usual end state for a successful scan will be DEFAULT. We also permit LINE_COMMENT,
     # meaning that line comments that are not terminated by a newline are acceptable.
     #
     # If we find ourselves in one of the five other states at the end of the scan, something is
     # wrong.
     #
     # If we're in either the STRING or STRING_BACKSLASH state, the input ended while scanning a
-    # string. This issue remains in the output, and will be caught when a JSON parser processes
-    # our output, so no action is needed.
+    # string, and this will also be true in the output we produce. A JSON parser that consumes
+    # our output will detect this error, so no action is needed here to handle this case.
     #
     # The three remaining erroneous states do require action from our side:
 
@@ -188,7 +188,7 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
         # If we're in either the BLOCK_COMMENT or BLOCK_COMMENT_STAR state, the input ended while
         # scanning an unterminated block comment. This issue would not be noticed by a JSON parser
         # that processes our output, as our output will just end with the spaces that replaced the
-        # partial block comment. So for both these end states, we will raise an exception.
+        # partial block comment. So for both these end states, we will raise an exception here.
         raise JSONWithCommentsError("Unterminated block comment.")
 
     # Concatenate the output characters and return the result.
