@@ -210,6 +210,6 @@ def parse_json_with_comments_string(json_with_comments: str):
 
 def parse_json_with_comments_file(filename: str):
     """Parse a JSON-with-comments file by erasing comments and parsing the result as JSON."""
-    with open(filename, "r") as f:
-        json_with_comments = f.read()
-    return parse_json_with_comments(json_with_comments)
+    with open(filename, "r") as input_file:
+        json_with_comments = input_file.read()
+    return parse_json_with_comments_string(json_with_comments)
