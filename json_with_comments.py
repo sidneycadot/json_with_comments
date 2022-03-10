@@ -121,7 +121,7 @@ _character_classifications = {
 
 
 def replace_json_comments_by_whitespace(input_string: str) -> str:
-    """Replace the comments in JSON-with-comments by whitespace and return valid JSON.
+    """Replace the comments in a JSON-with-comments string by whitespace and return valid JSON.
 
     All characters in a comment are replaced by spaces, except that carriage return and newline
     characters are passed through.
@@ -199,7 +199,7 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
 
 
 def parse_json_with_comments_string(json_with_comments: str):
-    """Parse JSON-with-comments string by erasing comments and parsing the result as JSON."""
+    """Parse a JSON-with-comments string by erasing comments and parsing the result as JSON."""
     json_without_comments = replace_json_comments_by_whitespace(json_with_comments)
     try:
         return json.loads(json_without_comments)
@@ -209,7 +209,7 @@ def parse_json_with_comments_string(json_with_comments: str):
 
 
 def parse_json_with_comments_file(filename: str):
-    """Parse JSON-with-comments file by erasing comments and parsing the result as JSON."""
+    """Parse a JSON-with-comments file by erasing comments and parsing the result as JSON."""
     with open(filename, "r") as f:
         json_with_comments = f.read()
     return parse_json_with_comments(json_with_comments)
