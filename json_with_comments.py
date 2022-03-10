@@ -1,21 +1,30 @@
-"""Routines to process JSON-with-comments.
+"""This module provides functions to parse JSON-with-comments.
 
-JSON is a convenient human-readable data interchange format due to it simplicity and
-widely available support. Unfortunately, it does not support comments, making it less
-suitable for configuration files.
+Standard JSON is a human-readable data interchange format that is popular due to its simplicity
+and wide support across programming languages. Unfortunately, it does not support comments,
+making it less suitable for configuration files.
 
-This module provides support for comments in JSON. Two kinds of comments are supported,
-replicating the two types of comment supported by the JavaScript language from which
-JSON originates:
+This module implements several functions that add support for comments to JSON, resulting in a
+format that we refer to as "JSON-with-comments". Two types of comments are supported, mirroring
+the two types of comment available in the JavaScript language from which JSON originates:
 
-(1) Line comments start with "//" and continue to the next newline character;
-(2) Block comments start with "/*" and end with the next "*/".
+* Line comments start with "//" and continue to the next newline character;
+* Block comments start with "/*" and end with the next "*/".
 
-This module works by replacing comments with whitespace. Inside comments, carriage returns
-and newlines are passed through as-is; all other characters are replaced by spaces. This
-preserves the structure of the original JSON-with-comments, allowing a subsequently run
-JSON parser to report any issues with line numbers and line offsets corresponding to the
-original JSON-with-comments.
+The core functionality of this module is provided by the replace_json_comments_by_whitespace()
+function. It takes an input string argument, replaces comments with whitespace, and returns an
+output string that is 'pure' JSON. Inside comments, carriage returns and newlines are passed
+through as-is; all other characters are replaced by spaces. This preserves the structure of the
+original input, allowing a subsequently run JSON parser to report any issues with line numbers
+and column offsets that correspond to the original JSON-with-comments input.
+
+Two convenience functions are provided that run replace_json_comments_by_whitespace() on input,
+then pass the resulting 'pure' JSON-string to the JSON parser that is provided by the "json"
+module in Python's standard library. For most programs, one of these two functions will provide
+the easiest way to use JSON-with-comments:
+
+* parse_json_with_comments_string() parses JSON-with comments from a string;
+* parse_json_with_comments_file() parses JSON-with comments from a file.
 """
 
 import json
@@ -112,14 +121,14 @@ _character_classifications = {
 
 
 def replace_json_comments_by_whitespace(input_string: str) -> str:
-    """Replace the comments in JSON-with-comments by whitespace, yielding valid JSON.
+    """Replace the comments in JSON-with-comments by whitespace and return valid JSON.
 
-    All characters in a comment are replaced by spaces, except carriage return and
-    newline characters that are passed through as-is.
+    All characters in a comment are replaced by spaces, except that carriage return and newline
+    characters are passed through.
 
-    This preserves line and character numbering of the output relative to the input.
-    If a JSON parser runs on our output and needs to report an issue, it can do so
-    with line numbers and line offsets that are meaningful.
+    This ensures that the line structure of the input is identical to the line structure of the
+    input, allowing a subsequently run JSON parser to report any issues with meaningful line
+    numbers and column offsets.
     """
 
     output = []
@@ -131,7 +140,7 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
         character_class = _character_classifications.get(current_character, CharacterClass.OTHER)
 
         # If a (state, character_class) tuple is not explicitly handled in the FSM definition,
-        # the behavior of CharacterClass.OTHER will be applied, which is defined for all states.
+        # the behavior of CharacterClass.OTHER will be used.
 
         if (state, character_class) not in _fsm_definition:
             character_class = CharacterClass.OTHER
@@ -160,12 +169,14 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
     # The usual end state for a successful scan should be DEFAULT. We also accept LINE_COMMENT,
     # meaning that line comments that are not terminated by a newline are acceptable.
     #
-    # If we're in one of the five other states at the end of the scan, something is wrong!
+    # If we find ourselves in one of the five other states at the end of the scan, something is
+    # wrong.
     #
-    # The states STRING and STRING_BACKSLASH indicate that the input ended while scanning a string.
-    # This issue remains in the output, and will be caught when a JSON parser processes our output.
+    # If we're in either the STRING or STRING_BACKSLASH state, the input ended while scanning a
+    # string. This issue remains in the output, and will be caught when a JSON parser processes
+    # our output, so no action is needed.
     #
-    # The three remaining erroneous states need action from our side:
+    # The three remaining erroneous states do require action from our side:
 
     if state == FsmState.COMMENT_INTRO:
         # If we're in the COMMENT_INTRO state, the input ended in a forward slash. This forward
@@ -174,10 +185,10 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
         # a JSON parser processes our output, causing a parsing error.
         output.append("/")
     elif state in (FsmState.BLOCK_COMMENT, FsmState.BLOCK_COMMENT_STAR):
-        # The end states BLOCK_COMMENT and BLOCK_COMMENT_STAR indicate that the input ended while
+        # If we're in either the BLOCK_COMMENT or BLOCK_COMMENT_STAR state, the input ended while
         # scanning an unterminated block comment. This issue would not be noticed by a JSON parser
-        # that processes our output, as our output will just end with the spaces that replaced
-        # the partial block comment. So for both these end states, we will raise an exception.
+        # that processes our output, as our output will just end with the spaces that replaced the
+        # partial block comment. So for both these end states, we will raise an exception.
         raise JSONWithCommentsError("Unterminated block comment.")
 
     # Concatenate the output characters and return the result.
@@ -187,18 +198,18 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
     return output_string
 
 
-def parse_json_with_comments(json_with_comments: str):
-    """Parse JSON-with-comments by replacing the comments with whitespace and parsing the result as JSON."""
+def parse_json_with_comments_string(json_with_comments: str):
+    """Parse JSON-with-comments string by erasing comments and parsing the result as JSON."""
     json_without_comments = replace_json_comments_by_whitespace(json_with_comments)
     try:
         return json.loads(json_without_comments)
     except json.JSONDecodeError as json_exception:
         # Wrap the JSONDecodeError in a JSONWithCommentsError exception.
-        raise JSONWithCommentsError("Comment removal did not yield valid JSON.") from json_exception
+        raise JSONWithCommentsError("Invalid JSON after erasing comments.") from json_exception
 
 
-def read_json_with_comments(filename: str):
-    """Read JSON-with-comments from a file and parse it."""
+def parse_json_with_comments_file(filename: str):
+    """Parse JSON-with-comments file by erasing comments and parsing the result as JSON."""
     with open(filename, "r") as f:
         json_with_comments = f.read()
     return parse_json_with_comments(json_with_comments)

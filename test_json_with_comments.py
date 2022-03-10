@@ -2,7 +2,7 @@
 
 """A small example showing how to use JSON-with-comments."""
 
-from json_with_comments import parse_json_with_comments
+from json_with_comments import parse_json_with_comments_string
 
 stress_test = """// This is a small test to see if comment removal works as it should.
 {
@@ -20,6 +20,6 @@ tralala
 
 """
 
-stress_test_dict = parse_json_with_comments(stress_test)
+stress_test_dict = parse_json_with_comments_string(stress_test)
 
 print(stress_test_dict)
