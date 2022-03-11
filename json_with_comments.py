@@ -5,23 +5,26 @@ and wide support across programming languages. Unfortunately, it does not suppor
 making it less suitable for configuration files.
 
 This module implements several functions that add support for comments to JSON, resulting in a
-format that we refer to as "JSON-with-comments". Two types of comments are supported, mirroring
-the two types of comments available in the JavaScript language from which JSON originates:
+JSON dialect that we refer to as "JSON-with-comments"; elsewhere, this format has been referred
+to as "jsonc".
+
+Two types of comments are supported, mirroring the two types of comments available in the
+JavaScript language from which JSON originates:
 
 * Line comments start with "//" and continue to the next newline character;
 * Block comments start with "/*" and end with the next "*/".
 
-The core functionality of this module is provided by the replace_json_comments_by_whitespace()
-function. It takes an input string argument, replaces comments with whitespace, and returns an
-output string that is 'pure' JSON. Inside comments, carriage returns and newlines are passed
-through as-is; all other characters are replaced by spaces. This preserves the structure of the
-original input, allowing a subsequently run JSON parser to report any issues with line numbers
-and column offsets that correspond to the original JSON-with-comments input.
+The core functionality of this module is provided by the erase_json_comments() function. It
+takes an input string argument, replaces comments with whitespace, and returns an output string
+that is 'pure' JSON. Inside comments, carriage returns and newlines are passed through as-is;
+all other characters are replaced by spaces. This preserves the structure of the original input,
+allowing a subsequently run JSON parser to report any issues with line numbers and column offsets
+that correspond to the original JSON-with-comments input.
 
-Two convenience functions are provided that run replace_json_comments_by_whitespace() on input,
-then pass the resulting 'pure' JSON-string to the JSON parser that is provided by the "json"
-module in Python's standard library. For most programs, one of these two functions will provide
-the easiest way to use JSON-with-comments:
+Two convenience functions are provided that run erase_json_comments() on input, then pass the
+resulting 'pure' JSON-string to the JSON parser that is provided by the "json" module in the
+Python standard library. For most programs, one of these two functions will provide the easiest
+way to use JSON-with-comments:
 
 * parse_json_with_comments_string() parses JSON-with comments from a string;
 * parse_json_with_comments_file() parses JSON-with comments from a file.
@@ -120,15 +123,15 @@ _character_classifications = {
 }
 
 
-def replace_json_comments_by_whitespace(input_string: str) -> str:
-    """Replace the comments in a JSON-with-comments string by whitespace and return valid JSON.
+def erase_json_comments(input_string: str) -> str:
+    """Erase the comments in a JSON-with-comments string and return valid JSON.
 
     All characters in a comment are replaced by spaces, except that carriage return and newline
     characters are passed through.
 
-    This ensures that the line structure of the input is identical to the line structure of the
-    input, allowing a subsequently run JSON parser to report any issues with meaningful line
-    numbers and column offsets.
+    This ensures that the structure of the input is identical to the structure of the input,
+    allowing a subsequently run JSON parser to report any issues with meaningful line numbers
+    and column offsets.
     """
 
     output = []
@@ -200,7 +203,7 @@ def replace_json_comments_by_whitespace(input_string: str) -> str:
 
 def parse_json_with_comments_string(json_with_comments: str):
     """Parse a JSON-with-comments string by erasing comments and parsing the result as JSON."""
-    json_without_comments = replace_json_comments_by_whitespace(json_with_comments)
+    json_without_comments = erase_json_comments(json_with_comments)
     try:
         return json.loads(json_without_comments)
     except json.JSONDecodeError as json_exception:
