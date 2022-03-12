@@ -22,7 +22,7 @@ allowing a subsequently run JSON parser to report any issues in the output with 
 column offsets that correspond to the original JSON-with-comments input.
 
 Two convenience functions are provided that run erase_json_comments() on input, then pass the
-resulting 'pure' JSON-string to the JSON parser that is provided by the 'json' module in the
+resulting 'purified' JSON-string to the JSON parser that is provided by the 'json' module in the
 Python standard library. For most programs, one of these two functions will provide the easiest
 way to use JSON-with-comments:
 
@@ -201,18 +201,26 @@ def erase_json_comments(input_string: str) -> str:
     return output_string
 
 
-def parse_json_with_comments_string(json_with_comments: str):
-    """Parse a JSON-with-comments string by erasing comments and parsing the result as JSON."""
+def parse_json_with_comments_string(json_with_comments: str, *, **kw):
+    """Parse a JSON-with-comments string by erasing comments and parsing the result as JSON.
+
+    Any keyword arguments are passed on to the json.loads() function that is used to parse
+    the input string from which the comments have been erased.
+    """
     json_without_comments = erase_json_comments(json_with_comments)
     try:
-        return json.loads(json_without_comments)
+        return json.loads(json_without_comments, **kw)
     except json.JSONDecodeError as json_exception:
         # Wrap the JSONDecodeError in a JSONWithCommentsError exception.
         raise JSONWithCommentsError("Invalid JSON after erasing comments.") from json_exception
 
 
-def parse_json_with_comments_file(filename: str):
-    """Parse a JSON-with-comments file by erasing comments and parsing the result as JSON."""
+def parse_json_with_comments_file(filename: str, *, **kw):
+    """Parse a JSON-with-comments file by erasing comments and parsing the result as JSON.
+
+    Any keyword arguments are passed on to the json.loads() function that is used to parse
+    the input string as read from the file from which the comments have been erased.
+    """
     with open(filename, "r") as input_file:
         json_with_comments = input_file.read()
-    return parse_json_with_comments_string(json_with_comments)
+    return parse_json_with_comments_string(json_with_comments, **kw)
