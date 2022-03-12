@@ -2,7 +2,7 @@
 
 Standard JSON is a human-readable data interchange format that is popular due to its simplicity
 and wide support across programming languages. Unfortunately, it does not support comments,
-making it less suitable for configuration files.
+making it less suitable for some applications like configuration files.
 
 This module implements several functions that add support for comments to JSON, resulting in a
 JSON dialect that we refer to as "JSON-with-comments"; elsewhere, this format has been referred
@@ -18,11 +18,11 @@ The core functionality of this module is provided by the erase_json_comments() f
 takes an input string argument, replaces comments with whitespace, and returns an output string
 that is 'pure' JSON. Inside comments, carriage returns and newlines are passed through as-is;
 all other characters are replaced by spaces. This preserves the structure of the original input,
-allowing a subsequently run JSON parser to report any issues with line numbers and column offsets
-that correspond to the original JSON-with-comments input.
+allowing a subsequently run JSON parser to report any issues in the output with line numbers and
+column offsets that correspond to the original JSON-with-comments input.
 
 Two convenience functions are provided that run erase_json_comments() on input, then pass the
-resulting 'pure' JSON-string to the JSON parser that is provided by the "json" module in the
+resulting 'pure' JSON-string to the JSON parser that is provided by the 'json' module in the
 Python standard library. For most programs, one of these two functions will provide the easiest
 way to use JSON-with-comments:
 
@@ -129,7 +129,7 @@ def erase_json_comments(input_string: str) -> str:
     All characters in a comment are replaced by spaces, except that carriage return and newline
     characters are passed through.
 
-    This ensures that the structure of the input is identical to the structure of the input,
+    This ensures that the structure of the output is identical to the structure of the input,
     allowing a subsequently run JSON parser to report any issues with meaningful line numbers
     and column offsets.
     """
