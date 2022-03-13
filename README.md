@@ -14,7 +14,7 @@ Two types of comments are supported, mirroring the two types of comments availab
 JavaScript language from which JSON originates:
 
 * Line comments start with "//" and continue to the next newline character;
-* Block comments start with "/*" and end with the next "*/".
+* Block comments start with "/\*" and end with the next "\*/".
 
 The core functionality of this module is provided by the erase_json_comments() function. It
 takes an input string argument, replaces comments with whitespace, and returns an output string
