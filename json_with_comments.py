@@ -201,7 +201,7 @@ def erase_json_comments(input_string: str) -> str:
     return output_string
 
 
-def parse_json_with_comments_string(json_with_comments: str, *, **kw):
+def parse_json_with_comments_string(json_with_comments: str, **kw):
     """Parse a JSON-with-comments string by erasing comments and parsing the result as JSON.
 
     Any keyword arguments are passed on to the json.loads() function that is used to parse
@@ -215,7 +215,7 @@ def parse_json_with_comments_string(json_with_comments: str, *, **kw):
         raise JSONWithCommentsError("Invalid JSON after erasing comments.") from json_exception
 
 
-def parse_json_with_comments_file(filename: str, *, **kw):
+def parse_json_with_comments_file(filename: str, **kw):
     """Parse a JSON-with-comments file by erasing comments and parsing the result as JSON.
 
     Any keyword arguments are passed on to the json.loads() function that is used to parse
