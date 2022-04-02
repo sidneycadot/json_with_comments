@@ -21,13 +21,18 @@ all other characters are replaced by spaces. This preserves the structure of the
 allowing a subsequently run JSON parser to report any issues in the output with line numbers and
 column offsets that correspond to the original JSON-with-comments input.
 
-Two convenience functions are provided that run erase_json_comments() on input, then pass the
-resulting 'purified' JSON-string to the JSON parser that is provided by the 'json' module in the
-Python standard library. For most programs, one of these two functions will provide the easiest
-way to use JSON-with-comments:
+The erase_json_comments() function is implemented as a 'finite-state transducer', which is a type
+of finite state machine (FSM) that produces output. Alternative approaches are possible, e.g.,
+based on regular expressions as provided by the 're' module in the Python standard library.
+However, the explicit FSM-approach is perfectly adequate and probably more understandable.
 
-* parse_json_with_comments_string() parses JSON-with comments from a string;
-* parse_json_with_comments_file() parses JSON-with comments from a file.
+In addition to the basic erase_json_comments() function, this module provides two convenience
+functions that run erase_json_comments() on their input and pass its 'purified' JSON output to
+the JSON parser that is provided by the 'json' module in the Python standard library. For most
+applications, they provide the easiest way to implement JSON-with-comments support:
+
+* parse_json_with_comments_string() parses JSON-with-comments from a string;
+* parse_json_with_comments_file() parses JSON-with-comments from a file.
 """
 
 import json
@@ -35,11 +40,11 @@ from enum import Enum
 
 
 class JSONWithCommentsError(ValueError):
-    """An error occurred while scanning JSON-with-comments."""
+    """An error occurred while processing JSON-with-comments."""
 
 
 class FsmState(Enum):
-    """Finite State Machine states for scanning JSON-with-comments."""
+    """Finite State Machine states for processing JSON-with-comments."""
     DEFAULT            = 1  # default state ; not scanning a string or comment.
     COMMENT_INTRO      = 2  # accepted '/'  ; the start of a line or block comment.
     LINE_COMMENT       = 3  # accepted '//' ; scanning a line comment.
@@ -50,33 +55,37 @@ class FsmState(Enum):
 
 
 class FsmAction(Enum):
-    """Finite State Machine actions for scanning JSON-with-comments."""
-    EMIT_NOTHING             = 1  # emit nothing
-    EMIT_CURRENT             = 2  # emit the current character
-    EMIT_FSLASH_THEN_CURRENT = 3  # emit forward slash followed by current character
-    EMIT_ONE_SPACE           = 4  # emit one space character
-    EMIT_TWO_SPACES          = 5  # emit two space characters
+    """Finite State Machine actions for processing JSON-with-comments."""
+    EMIT_NOTHING             = 1  # emit nothing.
+    EMIT_CURRENT             = 2  # emit the current character.
+    EMIT_FSLASH_THEN_CURRENT = 3  # emit forward slash followed by current character.
+    EMIT_ONE_SPACE           = 4  # emit one space character.
+    EMIT_TWO_SPACES          = 5  # emit two space characters.
 
 
 class CharacterClass(Enum):
-    """Character classes to be distinguished while scanning JSON-with-comments."""
-    FSLASH = 1  # forward slash
-    BSLASH = 2  # back slash
-    QUOTE  = 3  # string quote
-    CR     = 4  # carriage return
-    NL     = 5  # newline
-    STAR   = 6  # star (asterisk)
-    OTHER  = 7  # any other character
+    """Character classes to be distinguished while processing JSON-with-comments."""
+    FSLASH = 1  # forward slash.
+    BSLASH = 2  # back slash.
+    QUOTE  = 3  # string quote.
+    CR     = 4  # carriage return.
+    NL     = 5  # newline.
+    STAR   = 6  # star (asterisk).
+    OTHER  = 7  # any other character.
 
 
-# Define the transition table of (state, character_class) -> (action, next_state).
+# Define the FSM transition table with (state, character_class) -> (action, next_state) entries.
 #
 # Note that not all possible combinations of (state, character_class) are explicitly specified.
-# If a (state, character_class) combination is encountered while scanning that is not present
+# If a (state, character_class) combination is encountered while processing that is not present
 # in the transition table, the key (state, CharacterClass.OTHER) key will be used instead.
 #
 # This makes the transition table both smaller (only 22 out of 49 entries need to be specified)
 # and easier to understand.
+#
+# Our FSM preserves characters outside of strings and comments to the maximum extent possible,
+# even if the result is not valid JSON. For example, a stray '/' character that does not start
+# a comment will be passed through, even though it cannot occur in valid JSON.
 
 _fsm_definition = {
 
