@@ -1,8 +1,8 @@
 """This module provides functions to parse JSON-with-comments.
 
-Standard JSON is a human-readable data interchange format that is popular due to its simplicity
-and wide support across programming languages. Unfortunately, it does not support comments,
-making it less suitable for some applications like configuration files.
+Standard JSON is a human-readable data interchange format that is popular due to its simplicity,
+versatility, and wide support across programming languages. Unfortunately, it does not support
+comments, making it less suitable for some applications like configuration files.
 
 This module implements several functions that add support for comments to JSON, resulting in a
 JSON dialect that we refer to as "JSON-with-comments"; elsewhere, this format has been referred
@@ -212,7 +212,8 @@ def parse_json_with_comments_string(json_with_comments: str, **kw):
         return json.loads(json_without_comments, **kw)
     except json.JSONDecodeError as json_exception:
         # Wrap the JSONDecodeError in a JSONWithCommentsError exception.
-        raise JSONWithCommentsError("Invalid JSON after erasing comments.") from json_exception
+        message = "Invalid JSON after erasing comments: {}.".format(str(json_exception).lower())
+        raise JSONWithCommentsError() from json_exception
 
 
 def parse_json_with_comments_file(filename: str, **kw):
