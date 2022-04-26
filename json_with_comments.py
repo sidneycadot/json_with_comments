@@ -16,10 +16,10 @@ JavaScript language from which JSON originates:
 
 The core functionality of this module is provided by the erase_json_comments() function. It
 takes an input string argument, replaces comments with whitespace, and returns an output string
-that is 'pure' JSON. Inside comments, carriage returns and newlines are passed through as-is;
-all other characters are replaced by spaces. This preserves the structure of the original input,
-allowing a subsequently run JSON parser to report any issues in the output with line numbers and
-column offsets that correspond to the original JSON-with-comments input.
+that is 'pure' JSON. Inside comments, carriage return and newline characters are passed through
+as-is; all other characters are replaced by spaces. This preserves the structure of the original
+input, allowing a subsequently run JSON parser to report any issues in the output with line
+numbers and column offsets that correspond to the original JSON-with-comments input.
 
 The erase_json_comments() function is implemented as a 'finite-state transducer', which is a type
 of finite state machine (FSM) that produces output. Alternative approaches are possible, e.g.,
@@ -29,7 +29,7 @@ However, the explicit FSM-approach is perfectly adequate and probably more under
 In addition to the basic erase_json_comments() function, this module provides two convenience
 functions that run erase_json_comments() on their input and pass its 'purified' JSON output to
 the JSON parser that is provided by the 'json' module in the Python standard library. For most
-applications, they provide the easiest way to implement JSON-with-comments support:
+applications, these functions provide the easiest way to implement JSON-with-comments support:
 
 * parse_json_with_comments_string() parses JSON-with-comments from a string;
 * parse_json_with_comments_file() parses JSON-with-comments from a file.
@@ -191,7 +191,7 @@ def erase_json_comments(input_string: str) -> str:
     # The three remaining erroneous states do require action from our side:
 
     if state == FsmState.COMMENT_INTRO:
-        # If we're in the COMMENT_INTRO state, the input ended in a forward slash. This forward
+        # If we're in the COMMENT_INTRO state, the input ended with a forward slash. This forward
         # slash was not yet emitted when we entered the COMMENT_INTRO state, so we emit it now.
         # Since no valid JSON file can end with a forward slash, this slash will be caught when
         # a JSON parser processes our output, causing a parsing error.
