@@ -222,7 +222,7 @@ def parse_json_with_comments_string(json_with_comments: str, **kw):
     except json.JSONDecodeError as json_exception:
         # Wrap the JSONDecodeError in a JSONWithCommentsError exception.
         message = "Invalid JSON after erasing comments: {}.".format(str(json_exception).lower())
-        raise JSONWithCommentsError() from json_exception
+        raise JSONWithCommentsError(message) from json_exception
 
 
 def parse_json_with_comments_file(filename: str, **kw):
