@@ -231,6 +231,6 @@ def parse_json_with_comments_file(filename: str, **kw):
     Any keyword arguments are passed on to the json.loads() function that is used to parse
     the input string as read from the file from which the comments have been erased.
     """
-    with open(filename, "r") as input_file:
+    with open(filename, "r", encoding="utf-8") as input_file:
         json_with_comments = input_file.read()
     return parse_json_with_comments_string(json_with_comments, **kw)
